@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    @keyframes pulseWarn { 0%,100% { opacity:1 } 50% { opacity:.45 } }
+    @keyframes stepIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:none } }
+    body { margin:0; background:#eceff3; }
+    a { color:#1d5b9e; } a:hover { color:#0f2338; }
+  </style>
+  <script src="banco-usecipol-numerico.js"></script>
+  <script src="banco-usecipol-resto.js"></script>
+</helmet>
+
+<div style="min-height:100vh; background:#eceff3; font-family:'IBM Plex Sans',sans-serif; color:#16202c;">
+
+  <div style="background:#0f2338; padding:18px 40px; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; position:sticky; top:0; z-index:20; box-shadow:0 2px 14px rgba(0,0,0,.28);">
+    <div style="display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;">
+      <div style="font-family:'Source Serif 4',serif; font-size:23px; font-weight:700; color:#f2f5f8; letter-spacing:-.2px;">{{ examTitle }}</div>
+      <div style="font-size:14px; color:#8fa4bb;">{{ examSubtitle }}</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:22px;">
+      <div style="text-align:right;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:1.4px; color:#7f93aa; font-weight:600;">Tiempo restante</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:27px; font-weight:600; color:{{ timerColor }}; animation:{{ timerAnim }}; line-height:1.1;">{{ timerText }}</div>
+      </div>
+      <button onClick="{{ toggleMode }}" style="background:{{ modeBg }}; color:{{ modeColor }}; border:2px solid {{ modeBorder }}; padding:11px 20px; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;">{{ modeLabel }}</button>
+    </div>
+  </div>
+
+  <div style="max-width:1240px; margin:0 auto; padding:28px 40px 64px;">
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px;">
+      <sc-for list="{{ sectionTabs }}" as="tab" hint-placeholder-count="7">
+        <button onClick="{{ tab.go }}" style="padding:11px 17px; border-radius:8px; border:2px solid {{ tab.border }}; background:{{ tab.bg }}; color:{{ tab.color }}; font-size:14px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif; display:flex; align-items:center; gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; opacity:.75;">{{ tab.num }}</span>
+          <span>{{ tab.title }}</span>
+          <span style="background:{{ tab.pillBg }}; color:{{ tab.pillColor }}; border-radius:20px; padding:2px 8px; font-size:11px; font-family:'IBM Plex Mono',monospace;">{{ tab.done }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="background:#ffffff; border-radius:12px 12px 0 0; padding:26px 34px; border-top:5px solid #b58b3a; box-shadow:0 1px 3px rgba(15,35,56,.1);">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.6px; color:#8a6d28; font-weight:700; margin-bottom:6px;">Componente {{ currentSectionNum }} de {{ totalSections }}</div>
+          <div style="font-family:'Source Serif 4',serif; font-size:30px; font-weight:700; color:#0f2338; letter-spacing:-.3px;">{{ currentSectionTitle }}</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#5a6a7c; background:#f1f4f7; padding:8px 14px; border-radius:6px;">Pregunta {{ qNumInSection }} / {{ qTotalInSection }}</div>
+      </div>
+      <div style="font-size:14px; color:#5a6a7c; margin-top:12px; line-height:1.55; max-width:900px;">{{ currentSectionFocus }}</div>
+    </div>
+
+    <div style="background:#ffffff; padding:34px; box-shadow:0 1px 3px rgba(15,35,56,.1);">
+      <div style="display:flex; gap:14px; margin-bottom:26px;">
+        <div style="flex-shrink:0; width:46px; height:46px; border-radius:9px; background:#0f2338; color:#f2f5f8; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600;">{{ globalNum }}</div>
+        <div style="font-family:'Source Serif 4',serif; font-size:27px; line-height:1.5; color:#16202c; padding-top:5px; flex:1; white-space:pre-line;">{{ questionEl }}</div>
+      </div>
+
+      <sc-if value="{{ hasFigure }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#f6f8fa; border:1px solid #dde4ea; border-radius:10px; padding:26px; margin-bottom:28px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:14px;">{{ figureEl }}</div>
+      </sc-if>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <sc-for list="{{ optionsView }}" as="opt" hint-placeholder-count="4">
+          <button onClick="{{ opt.pick }}" style="text-align:left; padding:17px 21px; border-radius:9px; border:2px solid {{ opt.border }}; background:{{ opt.bg }}; cursor:pointer; display:flex; align-items:flex-start; gap:15px; font-family:'IBM Plex Sans',sans-serif;">
+            <span style="flex-shrink:0; width:32px; height:32px; border-radius:50%; background:{{ opt.badgeBg }}; color:{{ opt.badgeColor }}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px;">{{ opt.letter }}</span>
+            <span style="flex:1; font-size:19px; line-height:1.5; color:#16202c; padding-top:4px;">{{ opt.el }}</span>
+            <span style="flex-shrink:0; font-size:21px; font-weight:700; color:{{ opt.iconColor }}; padding-top:3px;">{{ opt.icon }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ showHintRow }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:22px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <button onClick="{{ toggleHint }}" style="background:#fdf7e8; border:2px solid #e0c886; color:#7a5f16; padding:11px 18px; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;">{{ hintBtnLabel }}</button>
+          <sc-if value="{{ hintOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1; min-width:280px; font-size:16px; color:#7a5f16; background:#fdf7e8; border-left:4px solid #d9b968; border-radius:6px; padding:12px 16px; line-height:1.5;">{{ hintText }}</div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ showSolution }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#ffffff; padding:0 34px 34px; box-shadow:0 1px 3px rgba(15,35,56,.1);">
+        <div style="border-top:1px dashed #d2dae2; padding-top:28px;">
+
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+            <div style="font-family:'Source Serif 4',serif; font-size:22px; font-weight:700; color:#0f2338;">Resolución paso a paso</div>
+            <div style="background:{{ verdictBg }}; color:{{ verdictColor }}; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700;">{{ verdictLabel }}</div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:13px; margin-bottom:30px;">
+            <sc-for list="{{ solutionSteps }}" as="st" hint-placeholder-count="5">
+              <div style="display:flex; gap:0; background:{{ st.bg }}; border-radius:9px; overflow:hidden; animation:stepIn .32s ease both; animation-delay:{{ st.delay }};">
+                <div style="flex-shrink:0; width:6px; background:{{ st.accent }};"></div>
+                <div style="flex-shrink:0; width:40px; display:flex; align-items:center; justify-content:center; background:{{ st.numBg }}; color:{{ st.accent }}; font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;">{{ st.num }}</div>
+                <div style="flex:1; padding:16px 20px; min-width:0;">
+                  <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.3px; font-weight:700; color:{{ st.accent }}; margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+                    <span>{{ st.icon }}</span><span>{{ st.label }}</span>
+                  </div>
+                  <div style="font-size:19px; line-height:1.62; color:#16202c;">{{ st.el }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#0f2338; border-radius:10px; padding:24px 28px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="font-size:19px;">⚡</span>
+              <div style="font-family:'Source Serif 4',serif; font-size:19px; font-weight:700; color:#f2d894;">Método rápido para el día del examen</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:13px;">
+              <sc-for list="{{ quickSteps }}" as="qs" hint-placeholder-count="3">
+                <div style="display:flex; gap:14px; align-items:flex-start;">
+                  <div style="flex-shrink:0; width:27px; height:27px; border-radius:50%; background:#b58b3a; color:#0f2338; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; font-family:'IBM Plex Mono',monospace;">{{ qs.num }}</div>
+                  <div style="font-size:18px; line-height:1.6; color:#e6edf4; padding-top:2px;">{{ qs.el }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="background:#ffffff; border-radius:0 0 12px 12px; padding:22px 34px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; box-shadow:0 1px 3px rgba(15,35,56,.1); border-top:1px solid #eef1f4;">
+      <button onClick="{{ goPrev }}" style="background:#ffffff; color:{{ prevColor }}; border:2px solid {{ prevBorder }}; padding:14px 26px; border-radius:8px; font-size:16px; font-weight:700; cursor:{{ prevCursor }}; font-family:'IBM Plex Sans',sans-serif;">← Anterior</button>
+      <div style="display:flex; gap:7px; flex-wrap:wrap; justify-content:center; flex:1;">
+        <sc-for list="{{ dots }}" as="d" hint-placeholder-count="35">
+          <button onClick="{{ d.go }}" title="{{ d.title }}" style="width:26px; height:26px; border-radius:5px; border:2px solid {{ d.border }}; background:{{ d.bg }}; color:{{ d.color }}; font-size:11px; font-weight:700; cursor:pointer; font-family:'IBM Plex Mono',monospace; padding:0;">{{ d.num }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ goNext }}" style="background:{{ nextBg }}; color:#ffffff; border:none; padding:14px 26px; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;">{{ nextLabel }}</button>
+    </div>
+
+    <sc-if value="{{ showReport }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#ffffff; border-radius:12px; margin-top:26px; padding:34px; box-shadow:0 1px 3px rgba(15,35,56,.1); border-top:5px solid {{ scoreColor }};">
+        <div style="font-family:'Source Serif 4',serif; font-size:28px; font-weight:700; color:#0f2338; margin-bottom:6px;">Resultado del examen</div>
+        <div style="font-size:15px; color:#5a6a7c; margin-bottom:26px;">Puntaje sobre 1000, con el mínimo institucional de 800 marcado como referencia.</div>
+
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:26px; flex-wrap:wrap; background:#0f2338; border-radius:11px; padding:28px 32px; margin-bottom:26px;">
+          <div>
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#8fa4bb; font-weight:700; margin-bottom:8px;">Puntaje obtenido</div>
+            <div style="font-family:'Source Serif 4',serif; font-size:58px; font-weight:700; color:#f2f5f8; line-height:1;">{{ score }}<span style="font-size:23px; color:#8fa4bb;"> / 1000</span></div>
+            <div style="display:inline-block; margin-top:12px; background:{{ scoreColor }}; color:#ffffff; padding:7px 16px; border-radius:6px; font-size:15px; font-weight:700;">{{ scoreLabel }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px; color:#8fa4bb; text-transform:uppercase; letter-spacing:1.2px;">Aciertos</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:600; color:#f2d894;">{{ correctCount }} / {{ totalQuestions }}</div>
+          </div>
+        </div>
+
+        <div style="font-family:'Source Serif 4',serif; font-size:19px; font-weight:700; color:#0f2338; margin-bottom:16px;">Desempeño por componente</div>
+        <div style="display:flex; flex-direction:column; gap:15px; margin-bottom:28px;">
+          <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="7">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; gap:12px;">
+                <div style="font-size:16px; font-weight:600; color:#16202c;">{{ b.title }}</div>
+                <div style="font-size:14px; color:#5a6a7c; font-family:'IBM Plex Mono',monospace;">{{ b.detail }} · <span style="font-weight:600; color:{{ b.color }};">{{ b.pctText }}</span></div>
+              </div>
+              <div style="background:#e8edf2; height:11px; border-radius:6px; overflow:hidden;">
+                <div style="background:{{ b.color }}; height:100%; width:{{ b.pct }}%;"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <button onClick="{{ reviewAll }}" style="background:#0f2338; color:#ffffff; border:none; padding:15px 28px; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;">Revisar todas las soluciones</button>
+          <button onClick="{{ restart }}" style="background:#ffffff; color:#0f2338; border:2px solid #0f2338; padding:15px 28px; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;">Reiniciar examen</button>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900}}">
+// Renderizador de notación matemática: [[a/b]] fracción, ^(n) exponente,
+// _(n) subíndice, sqrt(x) raíz. Se construye con createElement porque la
+// estructura depende del contenido y no puede expresarse como plantilla fija.
+function mathEl(raw, key) {
+  const text = String(raw == null ? "" : raw);
+  const out = [];
+  let buf = "";
+  let i = 0, k = 0;
+  const flush = () => { if (buf) { out.push(buf); buf = ""; } };
+
+  while (i < text.length) {
+    if (text.startsWith("[[", i)) {
+      const end = text.indexOf("]]", i);
+      const body = end > -1 ? text.slice(i + 2, end) : "";
+      const bar = body.indexOf("/");
+      if (end > -1 && bar > -1) {
+        flush();
+        out.push(React.createElement("span", {
+          key: "f" + (k++),
+          style: { display: "inline-flex", flexDirection: "column", alignItems: "center", verticalAlign: "middle", margin: "0 5px", fontSize: ".82em", lineHeight: 1.12, fontFamily: "'IBM Plex Mono',monospace" }
+        },
+          React.createElement("span", { style: { padding: "0 5px 2px", borderBottom: "2px solid currentColor" } }, body.slice(0, bar)),
+          React.createElement("span", { style: { padding: "2px 5px 0" } }, body.slice(bar + 1))
+        ));
+        i = end + 2; continue;
+      }
+    }
+    if (text.startsWith("sqrt(", i)) {
+      const end = text.indexOf(")", i);
+      if (end > -1) {
+        flush();
+        out.push(React.createElement("span", { key: "r" + (k++), style: { display: "inline-flex", alignItems: "flex-start", margin: "0 2px" } },
+          React.createElement("span", { style: { fontSize: "1.15em", lineHeight: 1 } }, "\u221A"),
+          React.createElement("span", { style: { borderTop: "2px solid currentColor", padding: "1px 3px 0" } }, text.slice(i + 5, end))
+        ));
+        i = end + 1; continue;
+      }
+    }
+    if ((text[i] === "^" || text[i] === "_") && text[i + 1] === "(") {
+      const end = text.indexOf(")", i);
+      if (end > -1) {
+        const isSup = text[i] === "^";
+        flush();
+        out.push(React.createElement(isSup ? "sup" : "sub", {
+          key: "s" + (k++),
+          style: { fontSize: ".7em", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600 }
+        }, text.slice(i + 2, end)));
+        i = end + 1; continue;
+      }
+    }
+    buf += text[i]; i++;
+  }
+  flush();
+  return React.createElement(React.Fragment, { key: key || "m" }, out);
+}
+
+const STEP_STYLE = {
+  dato:      { accent: "#4a5a6b", bg: "#f3f5f7", numBg: "#e7ebef", icon: "\u25C6" },
+  plantea:   { accent: "#1d5b9e", bg: "#eaf2fb", numBg: "#dbe9f8", icon: "\u25B6" },
+  resuelve:  { accent: "#a3690c", bg: "#fdf4e6", numBg: "#f8e9cf", icon: "\u2211" },
+  trampa:    { accent: "#a8322f", bg: "#fdeceb", numBg: "#f9dcda", icon: "\u26A0" },
+  verifica:  { accent: "#5b3f9e", bg: "#f1ecfb", numBg: "#e5dcf7", icon: "\u2713" },
+  resultado: { accent: "#1c6b45", bg: "#e9f5ee", numBg: "#d6ecdf", icon: "\u2605" }
+};
+
+const NAVY = "#0f2338", GOLD = "#b58b3a";
+function svgWrap(inner, size) {
+  return React.createElement("span", {
+    dangerouslySetInnerHTML: {
+      __html: '<svg viewBox="0 0 100 100" width="' + (size || 96) + '" height="' + (size || 96) + '">' + inner + "</svg>"
+    }
+  });
+}
+function arrowSvg(deg) {
+  return '<g transform="rotate(' + deg + ' 50 50)"><line x1="50" y1="84" x2="50" y2="24" stroke="' + NAVY + '" stroke-width="7"/><polygon points="50,10 38,30 62,30" fill="' + NAVY + '"/></g>';
+}
+function quadSvg(q) {
+  const paths = { SI: "M50,50 L10,50 L10,10 L50,10 Z", SD: "M50,50 L50,10 L90,10 L90,50 Z", ID: "M50,50 L90,50 L90,90 L50,90 Z", II: "M50,50 L50,90 L10,90 L10,50 Z" };
+  return '<rect x="10" y="10" width="80" height="80" fill="#fff" stroke="' + NAVY + '" stroke-width="4"/>' +
+    '<path d="' + paths[q] + '" fill="' + GOLD + '"/>' +
+    '<line x1="50" y1="10" x2="50" y2="90" stroke="' + NAVY + '" stroke-width="3"/>' +
+    '<line x1="10" y1="50" x2="90" y2="50" stroke="' + NAVY + '" stroke-width="3"/>';
+}
+function dotsSvg(n) {
+  const pos = [[28,28],[50,28],[72,28],[28,50],[50,50],[72,50],[28,72],[50,72],[72,72]];
+  let s = '<rect x="6" y="6" width="88" height="88" rx="9" fill="#fff" stroke="' + NAVY + '" stroke-width="3.5"/>';
+  for (let i = 0; i < n; i++) s += '<circle cx="' + pos[i][0] + '" cy="' + pos[i][1] + '" r="7.5" fill="' + NAVY + '"/>';
+  return s;
+}
+function polySvg(sides) {
+  const pts = [];
+  for (let i = 0; i < sides; i++) {
+    const a = (Math.PI * 2 * i) / sides - Math.PI / 2;
+    pts.push((50 + 34 * Math.cos(a)).toFixed(1) + "," + (52 + 34 * Math.sin(a)).toFixed(1));
+  }
+  return '<polygon points="' + pts.join(" ") + '" fill="none" stroke="' + NAVY + '" stroke-width="4.5"/>';
+}
+function circleSvg() {
+  return '<circle cx="50" cy="52" r="34" fill="none" stroke="' + NAVY + '" stroke-width="4.5"/>';
+}
+function gap(label) {
+  return React.createElement("span", {
+    style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "96px", height: "96px", border: "3px dashed " + GOLD, borderRadius: "9px", color: GOLD, fontSize: "34px", fontWeight: 700 }
+  }, label || "?");
+}
+function arrowGlyph(txt) {
+  return React.createElement("span", { style: { fontSize: "24px", color: "#4a5a6b", margin: "0 4px" } }, txt);
+}
+
+// Estímulos gráficos de razonamiento abstracto, uno por clave declarada en los datos.
+function buildFigure(kind) {
+  if (kind === "rotacion-serie") {
+    return ["SI", "SD", "ID"].map((q, i) => svgWrap(quadSvg(q), 96)).concat([gap()]).map((el, i) =>
+      React.createElement("span", { key: "rs" + i, style: { display: "inline-flex" } }, el));
+  }
+  if (kind === "matriz-puntos") {
+    const cells = [];
+    for (let i = 1; i <= 8; i++) cells.push(React.createElement("span", { key: "mp" + i }, svgWrap(dotsSvg(i), 84)));
+    cells.push(React.createElement("span", { key: "mpq" }, gap()));
+    return [React.createElement("span", {
+      key: "mpgrid",
+      style: { display: "grid", gridTemplateColumns: "repeat(3, auto)", gap: "9px" }
+    }, cells)];
+  }
+  if (kind === "analogia-giro") {
+    return [
+      React.createElement("span", { key: "a1" }, svgWrap(arrowSvg(0), 90)),
+      arrowGlyph("\u2192"),
+      React.createElement("span", { key: "a2" }, svgWrap(arrowSvg(90), 90)),
+      React.createElement("span", { key: "asep", style: { fontSize: "17px", color: "#4a5a6b", margin: "0 12px", fontWeight: 600 } }, "as\u00ED como"),
+      React.createElement("span", { key: "a3" }, svgWrap(arrowSvg(180), 90)),
+      arrowGlyph("\u2192"),
+      React.createElement("span", { key: "a4" }, gap())
+    ];
+  }
+  if (kind === "excluida-lados") {
+    // Cuatro figuras visualmente DISTINTAS y sin rótulos A–D: las opciones de
+    // respuesta se mezclan, así que cualquier letra en la figura induciría error.
+    return [polySvg(3), polySvg(4), polySvg(5), circleSvg()].map((s, i) =>
+      React.createElement("span", { key: "ex" + i, style: { display: "inline-flex" } }, svgWrap(s, 92)));
+  }
+  if (kind === "serie-lados") {
+    return [polySvg(3), polySvg(4), polySvg(5)].map((s, i) =>
+      React.createElement("span", { key: "sl" + i }, svgWrap(s, 92))
+    ).concat([React.createElement("span", { key: "slq" }, gap())]);
+  }
+  return null;
+}
+
+class Component extends DCLogic {
+  state = {
+    flat: [],
+    idx: 0,
+    answers: {},
+    practiceMode: true,
+    hintOpen: false,
+    timeLeft: 0,
+    finished: false,
+    revealAll: false
+  };
+
+  // Sortea `perSection` preguntas de cada pool: el examen cambia en cada intento.
+  buildFlat() {
+    const data = window.BANCO_USECIPOL;
+    if (!data) return [];
+    const n = data.meta.perSection || 20;
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+      return a;
+    };
+    const flat = [];
+    data.sections.forEach((sec, si) => {
+      const pool = sec.pool || sec.questions || [];
+      const picked = shuffle(pool).slice(0, Math.min(n, pool.length));
+      picked.forEach((q, qi) => {
+        // Aleatoriza también el orden de las opciones, preservando la correcta.
+        const order = shuffle(q.options.map((_, k) => k));
+        const shuffled = Object.assign({}, q, {
+          options: order.map((k) => q.options[k]),
+          correct: order.indexOf(q.correct)
+        });
+        flat.push({
+          sectionKey: sec.key, sectionTitle: sec.title, sectionFocus: sec.focus,
+          sectionIdx: si, qInSection: qi, sectionTotal: picked.length, q: shuffled
+        });
+      });
+    });
+    return flat;
+  }
+
+  componentDidMount() {
+    const data = window.BANCO_USECIPOL;
+    if (!data) return;
+    const flat = this.buildFlat();
+    this.setState({ flat: flat, timeLeft: data.meta.totalMinutes * 60 });
+    this._iv = setInterval(() => {
+      if (this.state.finished) return;
+      const t = this.state.timeLeft - 1;
+      if (t <= 0) { this.setState({ timeLeft: 0 }); this.finish(); }
+      else this.setState({ timeLeft: t });
+    }, 1000);
+  }
+  componentWillUnmount() { if (this._iv) clearInterval(this._iv); }
+
+  pick(i) {
+    const cur = this.state.idx;
+    if (this.state.answers[cur] !== undefined) return;
+    const answers = Object.assign({}, this.state.answers);
+    answers[cur] = i;
+    this.setState({ answers: answers });
+  }
+  go(n) {
+    if (n < 0 || n >= this.state.flat.length) return;
+    this.setState({ idx: n, hintOpen: false });
+  }
+  next() {
+    if (this.state.idx + 1 >= this.state.flat.length) { this.finish(); return; }
+    this.go(this.state.idx + 1);
+  }
+  prev() { this.go(this.state.idx - 1); }
+  finish() { if (this._iv) clearInterval(this._iv); this.setState({ finished: true }); }
+  toggleMode() { this.setState({ practiceMode: !this.state.practiceMode }); }
+  toggleHint() { this.setState({ hintOpen: !this.state.hintOpen }); }
+  reviewAll() { this.setState({ revealAll: true, idx: 0 }); }
+  restart() {
+    if (this._iv) clearInterval(this._iv);
+    // Un examen nuevo: se vuelve a sortear el banco completo.
+    this.setState({ flat: this.buildFlat(), idx: 0, answers: {}, finished: false, revealAll: false, hintOpen: false, timeLeft: window.BANCO_USECIPOL.meta.totalMinutes * 60 });
+    this._iv = setInterval(() => {
+      if (this.state.finished) return;
+      const t = this.state.timeLeft - 1;
+      if (t <= 0) { this.setState({ timeLeft: 0 }); this.finish(); }
+      else this.setState({ timeLeft: t });
+    }, 1000);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const data = window.BANCO_USECIPOL || { meta: {}, sections: [] };
+    const flat = s.flat;
+    const cur = flat[s.idx];
+    const total = flat.length;
+
+    // Examen de 2 horas: se muestra h:mm:ss cuando queda al menos una hora.
+    const hh = Math.floor(s.timeLeft / 3600);
+    const mm = Math.floor((s.timeLeft % 3600) / 60), ss = s.timeLeft % 60;
+    const pad = (n) => (n < 10 ? "0" : "") + n;
+    const timerText = hh > 0 ? hh + ":" + pad(mm) + ":" + pad(ss) : mm + ":" + pad(ss);
+    const urgent = s.timeLeft <= 300 && s.timeLeft > 0;
+
+    if (!cur) {
+      return {
+        examTitle: data.meta.title || "", examSubtitle: data.meta.subtitle || "",
+        timerText: timerText, timerColor: "#f2f5f8", timerAnim: "none",
+        sectionTabs: [], optionsView: [], solutionSteps: [], quickSteps: [], dots: [], breakdown: [],
+        currentSectionNum: "", totalSections: "", currentSectionTitle: "Cargando\u2026", currentSectionFocus: "",
+        qNumInSection: "", qTotalInSection: "", globalNum: "", questionEl: null,
+        hasFigure: false, figureEl: null, showSolution: false, showReport: false, showHintRow: false,
+        hintOpen: false, hintText: "", hintBtnLabel: "", modeLabel: "", modeBg: "", modeColor: "", modeBorder: "",
+        toggleMode: () => this.toggleMode(), toggleHint: () => this.toggleHint(),
+        goPrev: () => {}, goNext: () => {}, nextLabel: "", nextBg: "#0f2338",
+        prevColor: "#9aa7b4", prevBorder: "#dde4ea", prevCursor: "default",
+        verdictBg: "", verdictColor: "", verdictLabel: "",
+        score: 0, scoreColor: "#0f2338", scoreLabel: "", correctCount: 0, totalQuestions: 0,
+        reviewAll: () => this.reviewAll(), restart: () => this.restart()
+      };
+    }
+
+    const q = cur.q;
+    const answered = s.answers[s.idx];
+    const hasAnswer = answered !== undefined;
+    const reveal = s.revealAll || (s.practiceMode && hasAnswer) || (s.finished && hasAnswer) || (s.finished && s.revealAll);
+    const showSolution = s.revealAll ? true : (s.practiceMode ? hasAnswer : (s.finished && hasAnswer));
+
+    // Los índices se derivan del examen YA sorteado (flat), no del banco completo.
+    const secMeta = [];
+    flat.forEach((f, i) => {
+      if (!secMeta[f.sectionIdx]) secMeta[f.sectionIdx] = { base: i, count: 0, title: f.sectionTitle };
+      secMeta[f.sectionIdx].count++;
+    });
+
+    const sectionTabs = secMeta.map((m, i) => {
+      const active = i === cur.sectionIdx;
+      const base = m.base;
+      let done = 0;
+      for (let j = 0; j < m.count; j++) if (s.answers[base + j] !== undefined) done++;
+      return {
+        num: String(i + 1).padStart(2, "0"), title: m.title,
+        done: done + "/" + m.count,
+        bg: active ? "#0f2338" : "#ffffff",
+        color: active ? "#f2f5f8" : "#3d4c5c",
+        border: active ? "#0f2338" : "#dde4ea",
+        pillBg: active ? "#27405c" : "#eef1f4",
+        pillColor: active ? "#c8d6e4" : "#5a6a7c",
+        go: () => this.go(base)
+      };
+    });
+
+    const optionsView = q.options.map((text, i) => {
+      let bg = "#ffffff", border = "#dde4ea", badgeBg = "#eef1f4", badgeColor = "#3d4c5c", icon = "", iconColor = "";
+      if (reveal || showSolution) {
+        if (i === q.correct) { bg = "#e9f5ee"; border = "#1c6b45"; badgeBg = "#1c6b45"; badgeColor = "#fff"; icon = "\u2713"; iconColor = "#1c6b45"; }
+        else if (i === answered) { bg = "#fdeceb"; border = "#a8322f"; badgeBg = "#a8322f"; badgeColor = "#fff"; icon = "\u2715"; iconColor = "#a8322f"; }
+      } else if (i === answered) {
+        bg = "#eaf2fb"; border = "#1d5b9e"; badgeBg = "#1d5b9e"; badgeColor = "#fff";
+      }
+      return {
+        el: mathEl(text, "o" + i), letter: String.fromCharCode(65 + i),
+        bg, border, badgeBg, badgeColor, icon, iconColor,
+        pick: () => this.pick(i)
+      };
+    });
+
+    const solutionSteps = (q.steps || []).map((st, i) => {
+      const sty = STEP_STYLE[st.t] || STEP_STYLE.dato;
+      return {
+        num: String(i + 1), label: st.label, el: mathEl(st.text, "s" + i),
+        accent: sty.accent, bg: sty.bg, numBg: sty.numBg, icon: sty.icon,
+        delay: (i * 0.05).toFixed(2) + "s"
+      };
+    });
+    const quickSteps = (q.quick || []).map((t, i) => ({ num: String(i + 1), el: mathEl(t, "q" + i) }));
+
+    const dots = flat.map((f, i) => {
+      const a = s.answers[i];
+      const isCur = i === s.idx;
+      let bg = "#ffffff", border = "#dde4ea", color = "#5a6a7c";
+      if (isCur) { bg = "#0f2338"; border = "#0f2338"; color = "#ffffff"; }
+      else if (a !== undefined) {
+        const ok = a === f.q.correct;
+        if (s.practiceMode || s.finished || s.revealAll) {
+          bg = ok ? "#e9f5ee" : "#fdeceb"; border = ok ? "#1c6b45" : "#a8322f"; color = ok ? "#1c6b45" : "#a8322f";
+        } else { bg = "#eaf2fb"; border = "#1d5b9e"; color = "#1d5b9e"; }
+      }
+      return { num: String(i + 1), bg, border, color, title: f.sectionTitle + " \u00b7 " + (i + 1), go: () => this.go(i) };
+    });
+
+    let correctCount = 0;
+    flat.forEach((f, i) => { if (s.answers[i] === f.q.correct) correctCount++; });
+    const score = total ? Math.round((correctCount / total) * 1000) : 0;
+    const passed = score >= 800;
+
+    const breakdown = secMeta.map((m, i) => {
+      let ok = 0;
+      for (let j = 0; j < m.count; j++) {
+        const gi = m.base + j;
+        if (s.answers[gi] === flat[gi].q.correct) ok++;
+      }
+      const pct = m.count ? Math.round((ok / m.count) * 100) : 0;
+      return {
+        title: m.title, detail: ok + " de " + m.count,
+        pct: pct, pctText: pct + "%",
+        color: pct >= 80 ? "#1c6b45" : (pct >= 50 ? "#a3690c" : "#a8322f")
+      };
+    });
+
+    const verdictOk = hasAnswer && answered === q.correct;
+    const figureEls = q.figure ? buildFigure(q.figure) : null;
+
+    return {
+      examTitle: data.meta.title, examSubtitle: data.meta.subtitle,
+      timerText: timerText,
+      timerColor: urgent ? "#e78a84" : "#f2f5f8",
+      timerAnim: urgent ? "pulseWarn 1s infinite" : "none",
+
+      sectionTabs: sectionTabs,
+      currentSectionNum: String(cur.sectionIdx + 1),
+      totalSections: String(secMeta.length),
+      currentSectionTitle: cur.sectionTitle,
+      currentSectionFocus: cur.sectionFocus,
+      qNumInSection: String(cur.qInSection + 1),
+      qTotalInSection: String(cur.sectionTotal),
+      globalNum: String(s.idx + 1),
+
+      questionEl: mathEl(q.q, "q"),
+      hasFigure: !!figureEls,
+      figureEl: figureEls,
+
+      optionsView: optionsView,
+
+      showHintRow: !showSolution && !!q.hint,
+      hintOpen: s.hintOpen,
+      hintText: q.hint || "",
+      hintBtnLabel: s.hintOpen ? "Ocultar pista" : "\u25CB Ver una pista",
+
+      showSolution: showSolution,
+      solutionSteps: solutionSteps,
+      quickSteps: quickSteps,
+      verdictBg: verdictOk ? "#e9f5ee" : "#fdeceb",
+      verdictColor: verdictOk ? "#1c6b45" : "#a8322f",
+      verdictLabel: !hasAnswer ? "Sin responder" : (verdictOk ? "Respuesta correcta" : "Respuesta incorrecta"),
+
+      modeLabel: s.practiceMode ? "Modo práctica \u00b7 solución inmediata" : "Modo examen \u00b7 solución al final",
+      modeBg: s.practiceMode ? "#b58b3a" : "transparent",
+      modeColor: s.practiceMode ? "#0f2338" : "#c8d6e4",
+      modeBorder: s.practiceMode ? "#b58b3a" : "#3d5470",
+      toggleMode: () => this.toggleMode(),
+      toggleHint: () => this.toggleHint(),
+
+      goPrev: () => this.prev(), goNext: () => this.next(),
+      nextLabel: s.idx + 1 >= total ? "Finalizar examen" : "Siguiente \u2192",
+      nextBg: s.idx + 1 >= total ? "#a3690c" : "#0f2338",
+      prevColor: s.idx > 0 ? "#0f2338" : "#9aa7b4",
+      prevBorder: s.idx > 0 ? "#0f2338" : "#dde4ea",
+      prevCursor: s.idx > 0 ? "pointer" : "default",
+      dots: dots,
+
+      showReport: s.finished,
+      score: score, scoreColor: passed ? "#1c6b45" : "#a8322f",
+      scoreLabel: passed ? "APROBADO \u00b7 alcanzas el m\u00EDnimo de 800" : "NO APROBADO \u00b7 por debajo de 800",
+      correctCount: correctCount, totalQuestions: total,
+      breakdown: breakdown,
+      reviewAll: () => this.reviewAll(), restart: () => this.restart()
+    };
+  }
+}
+
+</script>
+</body>
+</html>
